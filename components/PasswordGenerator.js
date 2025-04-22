@@ -1,3 +1,6 @@
+import * as Clipboard from "expo-clipboard";
+import ClipboardIcon from "./ClipboardIcon";
+import { Pressable } from "react-native";
 import React, { useState } from "react";
 import {
   View,
@@ -16,6 +19,7 @@ export default function PasswordGenerator() {
   const [includeNumbers, setIncludeNumbers] = useState(true);
   const [includeSymbols, setIncludeSymbols] = useState(false);
   const [password, setPassword] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const generatePassword = () => {
     const UPPERCASE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -32,6 +36,7 @@ export default function PasswordGenerator() {
 
     if (characters === "") {
       Alert.alert("Uyarı", "Lütfen en az bir karakter tipi seçin.");
+
       return;
     }
 
@@ -44,9 +49,32 @@ export default function PasswordGenerator() {
     setPassword(result);
   };
 
+  const copyToClipboard = () => {
+    Clipboard.setStringAsync(password);
+    Alert.alert("Kopyalandı!", "Şifre panoya başarıyla kopyalandı.");
+  };
+
+  const resetHandler = () => {
+    setPassword("");
+    setLength("12");
+    setIncludeUppercase(true);
+    setIncludeLowercase(true);
+    setIncludeNumbers(true);
+    setIncludeSymbols(false);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🔐 Şifre Oluşturucu</Text>
+    <View
+      style={[styles.container, isDarkMode && styles.darkContainer]}
+    >
+      <Text style={[styles.label, isDarkMode && { color: "#fff" }]}>
+        Şifre Uzunluğu:
+      </Text>
+
+      <View style={styles.optionRow}>
+        <Text>Dark Mode</Text>
+        <Switch value={isDarkMode} onValueChange={setIsDarkMode} />
+      </View>
 
       <Text style={styles.label}>Şifre Uzunluğu:</Text>
       <TextInput
@@ -55,34 +83,36 @@ export default function PasswordGenerator() {
         onChangeText={setLength}
         keyboardType="numeric"
       />
-
       <View style={styles.optionRow}>
         <Text>Büyük Harf</Text>
         <Switch value={includeUppercase} onValueChange={setIncludeUppercase} />
       </View>
-
       <View style={styles.optionRow}>
         <Text>Küçük Harf</Text>
         <Switch value={includeLowercase} onValueChange={setIncludeLowercase} />
       </View>
-
       <View style={styles.optionRow}>
         <Text>Rakam</Text>
         <Switch value={includeNumbers} onValueChange={setIncludeNumbers} />
       </View>
-
       <View style={styles.optionRow}>
         <Text>Sembol</Text>
         <Switch value={includeSymbols} onValueChange={setIncludeSymbols} />
       </View>
-
       <Button title="Şifre Oluştur" onPress={generatePassword} />
-
       {password !== "" && (
         <>
-          <Text style={styles.result}>{password}</Text>
+          <Pressable onPress={copyToClipboard} style={styles.copyRow}>
+            <View style={styles.passwordContainer}>
+              <Text style={styles.result}>{password}</Text>
+              <View style={styles.iconWrapper}>
+                <ClipboardIcon size={22} color="#109010" />
+              </View>
+            </View>
+          </Pressable>
         </>
       )}
+      <Button title="Resetle" onPress={resetHandler} />
     </View>
   );
 }
@@ -98,6 +128,11 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginTop: 40,
   },
+
+  darkContainer: {
+    backgroundColor: "#1e1e1e",
+  },
+
   title: {
     fontSize: 20,
     fontWeight: "bold",
@@ -127,6 +162,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     textAlign: "center",
-    color: "#007bff",
+    color: "#FF0000",
+    textAlign: "center",
+    marginBottom: 15,
+  },
+
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center", // işte bu hizayı düzeltir
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  iconWrapper: {
+    marginTop: 1, // İsteğe bağlı: 1-2px yukarı/aşağı kaydırmak için
+  },
+
+  labelDark: {
+    color: "#ffffff",
   },
 });
