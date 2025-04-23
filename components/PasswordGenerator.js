@@ -2,6 +2,13 @@ import * as Clipboard from "expo-clipboard";
 import ClipboardIcon from "./ClipboardIcon";
 import { Pressable } from "react-native";
 import React, { useState } from "react";
+import { SafeAreaView } from "react-native";
+import { StatusBar } from "react-native";
+import { TouchableWithoutFeedback, Keyboard } from "react-native";
+import { FlatList } from "react-native";
+import { Modal } from "react-native";
+import { Alert } from 'react-native';
+
 import {
   View,
   Text,
@@ -9,7 +16,6 @@ import {
   Switch,
   Button,
   StyleSheet,
-  Alert,
 } from "react-native";
 
 export default function PasswordGenerator() {
@@ -20,6 +26,8 @@ export default function PasswordGenerator() {
   const [includeSymbols, setIncludeSymbols] = useState(false);
   const [password, setPassword] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const generatePassword = () => {
     const UPPERCASE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -54,6 +62,53 @@ export default function PasswordGenerator() {
     Alert.alert("Kopyalandı!", "Şifre panoya başarıyla kopyalandı.");
   };
 
+  const copyFavorite = (text) => {
+    Clipboard.setStringAsync(text);
+    Alert.alert("Kopyalandı", "Şifre panoya kopyalandı.");
+  };
+
+  function addToFavorites() {
+    // 1. Şifre boşsa ya da "Please select" gibi geçersizse → ekleme
+    if (!password || password === "Password" || password.startsWith("Please")) {
+      alert("Geçerli bir şifre oluşturmalısınız.");
+      return;
+    }
+    // 2. Daha önce eklenmişse → tekrar ekleme
+    if (favorites.includes(password)) {
+      alert("Bu şifre zaten favorilere eklenmiş.");
+      return;
+    }
+    // 3. Değilse → favorites dizisine ekle
+    const updatedFavorites = [...favorites, password];
+    setFavorites(updatedFavorites);
+
+    Alert.alert("Başarılı", "Şifre favorilere eklendi!");
+
+    // 4. Kalıcı olsun diye AsyncStorage'e kaydet (bunu birazdan ekleyeceğiz)
+    console.log("Favorilere eklendi:", password);
+  }
+
+  const removeFromFavorites = (itemToRemove) => {
+    Alert.alert(
+      "Favoriden Sil",
+      `"${itemToRemove}" şifresini silmek istiyor musunuz?`,
+      [
+        {
+          text: "İptal",
+          style: "cancel",
+        },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: () => {
+            const updated = favorites.filter((item) => item !== itemToRemove);
+            setFavorites(updated);
+          },
+        },
+      ]
+    );
+  };
+
   const resetHandler = () => {
     setPassword("");
     setLength("12");
@@ -64,69 +119,149 @@ export default function PasswordGenerator() {
   };
 
   return (
-    <View
-      style={[styles.container, isDarkMode && styles.darkContainer]}
-    >
-      <Text style={[styles.label, isDarkMode && { color: "#fff" }]}>
-        Şifre Uzunluğu:
-      </Text>
-
-      <View style={styles.optionRow}>
-        <Text>Dark Mode</Text>
-        <Switch value={isDarkMode} onValueChange={setIsDarkMode} />
-      </View>
-
-      <Text style={styles.label}>Şifre Uzunluğu:</Text>
-      <TextInput
-        style={styles.input}
-        value={length}
-        onChangeText={setLength}
-        keyboardType="numeric"
-      />
-      <View style={styles.optionRow}>
-        <Text>Büyük Harf</Text>
-        <Switch value={includeUppercase} onValueChange={setIncludeUppercase} />
-      </View>
-      <View style={styles.optionRow}>
-        <Text>Küçük Harf</Text>
-        <Switch value={includeLowercase} onValueChange={setIncludeLowercase} />
-      </View>
-      <View style={styles.optionRow}>
-        <Text>Rakam</Text>
-        <Switch value={includeNumbers} onValueChange={setIncludeNumbers} />
-      </View>
-      <View style={styles.optionRow}>
-        <Text>Sembol</Text>
-        <Switch value={includeSymbols} onValueChange={setIncludeSymbols} />
-      </View>
-      <Button title="Şifre Oluştur" onPress={generatePassword} />
-      {password !== "" && (
-        <>
-          <Pressable onPress={copyToClipboard} style={styles.copyRow}>
-            <View style={styles.passwordContainer}>
-              <Text style={styles.result}>{password}</Text>
-              <View style={styles.iconWrapper}>
-                <ClipboardIcon size={22} color="#109010" />
-              </View>
+    <View style={[styles.fullScreen, isDarkMode && styles.darkContainer]}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView
+          style={[styles.container, isDarkMode && styles.darkContainer]}
+        >
+          <StatusBar
+            barStyle={isDarkMode ? "light-content" : "dark-content"}
+            backgroundColor={isDarkMode ? "#1e1e1e" : "#f2f2f2"}
+          />
+          <View style={[styles.container, isDarkMode && styles.darkContainer]}>
+            <View style={styles.optionRow}>
+              <Text style={[isDarkMode && { color: "#fff" }]}>Dark Mode</Text>
+              <Switch value={isDarkMode} onValueChange={setIsDarkMode} />
             </View>
-          </Pressable>
-        </>
-      )}
-      <Button title="Resetle" onPress={resetHandler} />
+
+            <Text style={[styles.label, isDarkMode && { color: "#fff" }]}>
+              Şifre Uzunluğu:
+            </Text>
+            <TextInput
+              style={[styles.input, isDarkMode && styles.inputDark]}
+              value={length}
+              onChangeText={(text) => setLength(text)}
+              keyboardType="numeric"
+              onSubmitEditing={() => Keyboard.dismiss()}
+            />
+            <View style={styles.optionRow}>
+              <Text style={[isDarkMode && { color: "#fff" }]}>Büyük Harf</Text>
+              <Switch
+                value={includeUppercase}
+                onValueChange={setIncludeUppercase}
+              />
+            </View>
+            <View style={styles.optionRow}>
+              <Text style={[isDarkMode && { color: "#fff" }]}>Küçük Harf</Text>
+              <Switch
+                value={includeLowercase}
+                onValueChange={setIncludeLowercase}
+              />
+            </View>
+            <View style={styles.optionRow}>
+              <Text style={[isDarkMode && { color: "#fff" }]}>Rakam</Text>
+              <Switch
+                value={includeNumbers}
+                onValueChange={setIncludeNumbers}
+              />
+            </View>
+            <View style={styles.optionRow}>
+              <Text style={[isDarkMode && { color: "#fff" }]}>Sembol</Text>
+              <Switch
+                value={includeSymbols}
+                onValueChange={setIncludeSymbols}
+              />
+            </View>
+            <Button title="Şifre Oluştur" onPress={generatePassword} />
+            {password !== "" && (
+              <>
+                <Pressable onPress={copyToClipboard} style={styles.copyRow}>
+                  <View style={styles.passwordContainer}>
+                    <Text
+                      style={[styles.result, isDarkMode && styles.resultDark]}
+                    >
+                      {password}
+                    </Text>
+                    <View style={styles.iconWrapper}>
+                      {/*  <ClipboardIcon
+                        color={isDarkMode ? "#8be9fd" : "#007bff"}
+                        size={20}
+                      /> */}
+                    </View>
+                  </View>
+                </Pressable>
+              </>
+            )}
+            <Button title="Resetle" onPress={resetHandler} />
+            <Button title="Favorilere Ekle" onPress={addToFavorites} />
+            <Button
+              title="Favori Şifreleri Göster"
+              onPress={() => setModalVisible(true)}
+            />
+          </View>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+      <Modal visible={modalVisible} animationType="slide" transparent={false}>
+        <View
+          style={{
+            flex: 1,
+            padding: 25,
+            backgroundColor: isDarkMode ? "#1e1e1e" : "#fff",
+          }}
+        >
+          <Text
+            style={[styles.favHeader, { color: isDarkMode ? "#fff" : "#000" }]}
+          >
+            Favori Şifreler
+          </Text>
+
+          <FlatList
+            data={favorites}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => copyFavorite(item)}
+                onLongPress={() => removeFromFavorites(item)}
+              >
+                <Text
+                  style={[
+                    styles.favoriteItem,
+                    { color: isDarkMode ? "#fff" : "#333" },
+                  ]}
+                >
+                  {item}
+                </Text>
+              </Pressable>
+            )}
+          />
+
+          <Button title="Kapat" onPress={() => setModalVisible(false)} />
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "white",
-    padding: 16,
     borderRadius: 12,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     marginTop: 40,
+    flex: 1, // TAM ekran kapsar
+    padding: 20,
+    backgroundColor: "#f2f2f2",
+  },
+
+  fullScreen: {
+    flex: 1,
+    backgroundColor: "#f2f2f2", // light mode
+  },
+
+  safeArea: {
+    flex: 1,
   },
 
   darkContainer: {
@@ -143,6 +278,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
   },
+
+  labelDark: {
+    color: "#ffffff",
+  },
+
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -151,6 +291,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 12,
   },
+
+  inputDark: {
+    backgroundColor: "#2c2c2c",
+    color: "#ffffff",
+    borderColor: "#555",
+  },
+
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -167,6 +314,10 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
+  resultDark: {
+    color: "#8be9fd", // Açık mavi gibi
+  },
+
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center", // işte bu hizayı düzeltir
@@ -174,11 +325,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
-  iconWrapper: {
-    marginTop: 1, // İsteğe bağlı: 1-2px yukarı/aşağı kaydırmak için
+  favHeader: {
+    padding: 20,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 20,
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#007bff",
   },
 
-  labelDark: {
-    color: "#ffffff",
+  favoriteItem: {
+    fontSize: 16,
+    paddingVertical: 6,
+    textAlign: "center",
+    color: "#333",
   },
+
+  emptyText: {
+    fontSize: 14,
+    fontStyle: "italic",
+    textAlign: "center",
+    color: "#888",
+  },
+
+  /*  iconWrapper: {
+    marginTop: 1, // İsteğe bağlı: 1-2px yukarı/aşağı kaydırmak için
+  }, */
 });
