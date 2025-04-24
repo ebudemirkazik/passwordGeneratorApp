@@ -1,28 +1,21 @@
 {
   "expo": {
-    "name": "passwordGeneratorApp",
-    "slug": "passwordGeneratorApp",
+    "name": "Sample Password Generator",
+    "slug": "sample-password-generator",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "scheme": "passwordgen",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+      "package": "com.ebubekirdemirkazik.samplepasswordgenerator",
+      "versionCode": 1,
+      "permissions": []
     }
   }
 }
