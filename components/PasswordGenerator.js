@@ -7,7 +7,10 @@ import { StatusBar } from "react-native";
 import { TouchableWithoutFeedback, Keyboard } from "react-native";
 import { FlatList } from "react-native";
 import { Modal } from "react-native";
-import { Alert } from 'react-native';
+import { Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+await AsyncStorage.setItem("favorites", JSON.stringify(updated));
+import React, { useState, useEffect } from 'react';
 
 import {
   View,
@@ -67,7 +70,36 @@ export default function PasswordGenerator() {
     Alert.alert("Kopyalandı", "Şifre panoya kopyalandı.");
   };
 
-  function addToFavorites() {
+  const addToFavorites = async () => {
+    if (!password || password === "Password" || password.startsWith("Please")) {
+      Alert.alert("Uyarı", "Geçerli bir şifre oluşturmalısınız.");
+      return;
+    }
+
+    if (favorites.includes(password)) {
+      Alert.alert("Bilgi", "Bu şifre zaten favorilerde.");
+      return;
+    }
+
+    const updatedFavorites = [...favorites, password];
+    setFavorites(updatedFavorites);
+    await AsyncStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+
+    Alert.alert("Başarılı", "Şifre favorilere eklendi!");
+  };
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      const stored = await AsyncStorage.getItem("favorites");
+      if (stored) {
+        setFavorites(JSON.parse(stored));
+      }
+    };
+
+    loadFavorites();
+  }, []);
+
+  /* function addToFavorites() {
     // 1. Şifre boşsa ya da "Please select" gibi geçersizse → ekleme
     if (!password || password === "Password" || password.startsWith("Please")) {
       alert("Geçerli bir şifre oluşturmalısınız.");
@@ -86,23 +118,21 @@ export default function PasswordGenerator() {
 
     // 4. Kalıcı olsun diye AsyncStorage'e kaydet (bunu birazdan ekleyeceğiz)
     console.log("Favorilere eklendi:", password);
-  }
+  } */
 
-  const removeFromFavorites = (itemToRemove) => {
+  const removeFromFavorites = async (itemToRemove) => {
     Alert.alert(
       "Favoriden Sil",
       `"${itemToRemove}" şifresini silmek istiyor musunuz?`,
       [
-        {
-          text: "İptal",
-          style: "cancel",
-        },
+        { text: "İptal", style: "cancel" },
         {
           text: "Sil",
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
             const updated = favorites.filter((item) => item !== itemToRemove);
             setFavorites(updated);
+            await AsyncStorage.setItem("favorites", JSON.stringify(updated));
           },
         },
       ]
