@@ -16,6 +16,11 @@
       "package": "com.ebubekirdemirkazik.samplepasswordgenerator",
       "versionCode": 1,
       "permissions": []
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d0f21bb9-b8e3-43b0-b262-9ac50e6d717e"
+      }
     }
   }
 }
